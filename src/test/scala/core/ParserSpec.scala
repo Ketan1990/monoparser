@@ -34,7 +34,7 @@ class ParserSpec extends FlatSpec with Matchers {
     assertResult(actual2)(List())
   }
 
-  it can "define parsers for specific characters" in {
+  it can "define parsers for recognizing characters" in {
     val actual = char('h').run("hllo")
     assertResult(actual)(List(('h', "llo")))
   }
@@ -71,11 +71,18 @@ class ParserSpec extends FlatSpec with Matchers {
   }
 
   it should "word parser" in {
-
     assertResult(word.run("Yes!"))(List(("Yes", "!"),
       ("Ye", "s!"), ("Y", "es!"), ("", "Yes!")))
 
     assertResult(word.run("121"))(List(("", "121")))
   }
 
+  it should "recognize string using string parser" in  {
+    assertResult(string("hello").run("hello there"))(List(("hello", " there")))
+   // assertResult(string("hello").run("helicopter"))(List())
+  }
+
+  it should "recognize negative number parser" in  {
+    assertResult(negs(List(1,-2,4,-6)))(List(-2,-4))
+  }
 }

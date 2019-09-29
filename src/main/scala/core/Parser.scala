@@ -9,10 +9,9 @@ case class Parser[A](run: String => List[(A, String)]) {
 
   def flatMap[B](f: A => Parser[B]): Parser[B] = bind(self)(f)
 
-  def plus: Parser[A] => Parser[A] =  p2 => {
+  def plus: Parser[A] => Parser[A] = p2 => {
     Parser(inp => self.run(inp) ++: p2.run(inp))
   }
-
 
 }
 
@@ -41,6 +40,7 @@ object Parser {
   /*  Using sat, we can define parsers for specific characters, single digits, lower-case
     letters, and upper-case letters:*/
   def char: Char => Parser[Char] = x => {
+    println(s"$x")
     sat(y => x == y)
   }
 
@@ -50,18 +50,32 @@ object Parser {
 
   def upper: Parser[Char] = sat(x => 'A' <= x && x <= 'Z')
 
-  def letter:Parser[Char] = lower.plus(upper)
+  def letter: Parser[Char] = lower.plus(upper)
 
-  def alphaNum:Parser[Char] = letter plus digit
+  def alphaNum: Parser[Char] = letter plus digit
 
   def word: Parser[String] = {
 
     val newWord: Parser[String] = for {
       x <- letter
       y <- word
-    }yield x.toString.concat(y)
+    } yield x.toString.concat(y)
 
     newWord plus result("")
-
   }
+
+  def string: String => Parser[String] = str => str.toList match {
+    case Nil => result("")
+    case x :: xs => for {
+      a <- char(x)
+      b <- string(xs.mkString)
+    } yield a.toString.concat(b)
+  }
+
+  def negs:List[Int] => List[Int] = list =>
+      for {
+        x <- list
+        if(x < 0)
+      } yield x
+
 }
