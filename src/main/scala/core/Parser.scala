@@ -16,6 +16,11 @@ case class Parser[A](run: String => List[(A, String)]) {
 }
 
 object Parser {
+
+  implicit class Plus[A](paser: Parser[A]) {
+    def ++ : Parser[A] => Parser[A] = parser2 => paser plus parser2
+  }
+
   def result[A]: A => Parser[A] = a => Parser(input => List((a, input)))
 
   def zero[A]: Parser[A] = Parser(_ => List())
@@ -39,8 +44,8 @@ object Parser {
 
   /*  Using sat, we can define parsers for specific characters, single digits, lower-case
     letters, and upper-case letters:*/
+
   def char: Char => Parser[Char] = x => {
-    println(s"$x")
     sat(y => x == y)
   }
 
@@ -54,15 +59,8 @@ object Parser {
 
   def alphaNum: Parser[Char] = letter plus digit
 
-  def word: Parser[String] = {
-
-    val newWord: Parser[String] = for {
-      x <- letter
-      y <- word
-    } yield x.toString.concat(y)
-
-    newWord plus result("")
-  }
+  def word: Parser[String] =
+    many(letter).map(_.mkString)
 
   def string: String => Parser[String] = str => str.toList match {
     case Nil => result("")
@@ -72,10 +70,34 @@ object Parser {
     } yield a.toString.concat(b)
   }
 
-  def negs:List[Int] => List[Int] = list =>
-      for {
-        x <- list
-        if(x < 0)
-      } yield x
+  def many[A](p: Parser[A]): Parser[List[A]] =
+    (for {x <- p; xs <- many(p)} yield x :: xs) plus result(List())
 
+  def many1[A](p: Parser[A]): Parser[List[A]] = for {
+    x <- p
+    xs <- many(p)
+  } yield x :: xs
+
+  def ident: Parser[String] = (for {
+    x <- lower
+    xs <- many(alphaNum)
+  } yield x :: xs).map(_.mkString)
+
+
+  def sepby1[A, B]: Parser[A] => Parser[B] => Parser[List[A]] = p => sep => {
+    for {
+      x <- p
+      xs <- many(for {_ <- sep; y <- p} yield y)
+    } yield x :: xs
+  }
+
+  def sepby[A, B]: Parser[A] => Parser[B] => Parser[List[A]] =
+    p => sep => sepby1(p)(sep) plus result(List())
+
+  def bracket[A, B, C, D]: Parser[A] => Parser[B] => Parser[C] => Parser[B] =
+    open => parser => close => for {
+      _ <- open
+      xs <- parser
+      _ <- close
+    } yield xs
 }

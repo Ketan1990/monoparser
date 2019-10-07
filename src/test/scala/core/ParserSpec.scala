@@ -4,6 +4,7 @@ import org.scalatest._
 
 class ParserSpec extends FlatSpec with Matchers {
 
+  import IntParser._
   import Parser._
 
   "A Parser" should "primitive parser result which succeed without consuming any of the input String" in {
@@ -77,12 +78,24 @@ class ParserSpec extends FlatSpec with Matchers {
     assertResult(word.run("121"))(List(("", "121")))
   }
 
-  it should "recognize string using string parser" in  {
+  it should "recognize string using string parser" in {
     assertResult(string("hello").run("hello there"))(List(("hello", " there")))
-   // assertResult(string("hello").run("helicopter"))(List())
+    // assertResult(string("hello").run("helicopter"))(List())
   }
 
-  it should "recognize negative number parser" in  {
-    assertResult(negs(List(1,-2,4,-6)))(List(-2,-4))
+  it should "The many combinator parse sequences of item " in {
+    assertResult(many(char('a')).run("aab"))(List((List('a', 'a'), "b"), (List('a'), "ab"), (List(), "aab")))
   }
+
+  it should "The many1 combinator parse sequences of items and return non-empty sequence of item" in {
+    assertResult(many1(char('a')).run("aab"))(List((List('a', 'a'), "b"), (List('a'), "ab")))
+  }
+
+  it should " sepby for possibly-empty sequences" in {
+    assertResult(sepby(int)(char('-')).run("1-2"))(List((List(1, 2), ""), (List(1), "-2"), (List(), "1-2")))
+  }
+  "bracket parser" should "parser elements inside the brackets" in {
+    assertResult(bracket(char('('))(sepby1(int)(char(',')))(char(')')).run("(1,2,3,5)"))(List((List(1, 2, 3, 5), "")))
+  }
+
 }
